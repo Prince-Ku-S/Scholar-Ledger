@@ -1,0 +1,11 @@
+# Node dependencies
+node_modules/
+
+# Environment variables & secrets
+.env
+
+# Truffle build artifacts
+build/
+
+# Lock files (optional but clean)
+package-lock.json
