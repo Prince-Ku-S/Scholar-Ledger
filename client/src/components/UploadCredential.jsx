@@ -7,6 +7,7 @@ function UploadCredential() {
   const [file, setFile] = useState(null);
   const [cid, setCid] = useState("");
   const [status, setStatus] = useState("");
+  const [title, setTitle] = useState("");
 
   const handleUploadAndStore = async () => {
     if (!file) return alert("Select a file");
@@ -26,7 +27,11 @@ function UploadCredential() {
 
     const cidHash = ethers.keccak256(ethers.toUtf8Bytes(ipfsCid));
 
-    const tx = await contract.addCredential(studentAddress, cidHash);
+    if(!title){
+        alert ("Please enter credential title");
+        return;
+    }
+    const tx = await contract.issueCredential(studentAddress, cidHash, title);
     await tx.wait();
 
     setStatus("✅ Credential stored on blockchain!");
@@ -35,6 +40,18 @@ function UploadCredential() {
   return (
     <div>
       <h3>Upload Academic Document</h3>
+      <input
+        type="text"
+        placeholder="Credential Title (e.g. BTech Semester 6)"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        style={{
+            width: "400px",
+            display: "block",
+            marginBottom: "10px",
+        }}
+      />
+
       <input type="file" onChange={(e) => setFile(e.target.files[0])} />
       <button onClick={handleUploadAndStore}>
         Upload & Store on Blockchain

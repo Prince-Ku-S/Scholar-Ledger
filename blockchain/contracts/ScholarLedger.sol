@@ -1,53 +1,139 @@
-//SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 contract ScholarLedger {
 
-    // Address of the University/admin
-    address public admin;
+    /* ========== ROLES ========== */
 
-    // Structure to store credential details
-    struct Credential {
-        bytes32 documentHash;
-        uint256 issuedOn;
-    }
+    address public universityAdmin;
 
-    // Mapping: Student address => list of credentials
-    mapping(address => Credential[]) private studentCredentials;
-
-    // Events for transparency and logging
-    event CredentialIssued (address indexed student, bytes32 documentHash, uint256 issuedOn);
-
-    //Modifier to restrict access to admin only
     modifier onlyAdmin() {
-        require(msg.sender == admin, "Only admin can perform this action");
+        require(msg.sender == universityAdmin, "Only admin allowed");
         _;
     }
 
-    // Constructor sets the admin as contract deployer
-    constructor() {
-        admin = msg.sender;
+    /* ========== DATA STRUCTURES ========== */
+
+    struct Credential {
+        bytes32 cidHash;        // keccak256(IPFS CID)
+        string title;           // e.g. "BTech Semester 6"
+        uint256 issuedOn;
+        bool revoked;
+        address issuer;
     }
 
-    //Function to issue a credential to a student
-    function addCredential(address student, bytes32 documentHash) public onlyAdmin {
+    // student address => credentials
+    mapping(address => Credential[]) private studentCredentials;
+
+    /* ========== EVENTS ========== */
+
+    event CredentialIssued(
+        address indexed student,
+        uint256 indexed index,
+        bytes32 cidHash,
+        string title
+    );
+
+    event CredentialRevoked(
+        address indexed student,
+        uint256 indexed index
+    );
+
+    /* ========== CONSTRUCTOR ========== */
+
+    constructor() {
+        universityAdmin = msg.sender;
+    }
+
+    /* ========== ADMIN FUNCTIONS ========== */
+
+    function issueCredential(
+        address student,
+        bytes32 cidHash,
+        string calldata title
+    ) external onlyAdmin {
+
         studentCredentials[student].push(
-            Credential(documentHash, block.timestamp)
+            Credential({
+                cidHash: cidHash,
+                title: title,
+                issuedOn: block.timestamp,
+                revoked: false,
+                issuer: msg.sender
+            })
         );
 
-        emit CredentialIssued(student, documentHash, block.timestamp);
+        emit CredentialIssued(
+            student,
+            studentCredentials[student].length - 1,
+            cidHash,
+            title
+        );
     }
 
-    //Get total number of credentials for a student
-    function getCredentialCount(address student) public view returns (uint256) {
+    function revokeCredential(
+        address student,
+        uint256 index
+    ) external onlyAdmin {
+
+        require(index < studentCredentials[student].length, "Invalid index");
+        studentCredentials[student][index].revoked = true;
+
+        emit CredentialRevoked(student, index);
+    }
+
+    /* ========== READ FUNCTIONS (FOR UI) ========== */
+
+    function getCredentialCount(address student)
+        external
+        view
+        returns (uint256)
+    {
         return studentCredentials[student].length;
     }
 
+    function getCredential(
+        address student,
+        uint256 index
+    )
+        external
+        view
+        returns (
+            bytes32 cidHash,
+            string memory title,
+            uint256 issuedOn,
+            bool revoked,
+            address issuer
+        )
+    {
+        require(index < studentCredentials[student].length, "Invalid index");
 
-    //Verify if a credential hash exists for a student
-    function verifyCredential(address student, bytes32 documentHash) public view returns (bool) {
-        for (uint256 i = 0; i < studentCredentials[student].length; i++) {
-            if (studentCredentials[student][i].documentHash == documentHash) {
+        Credential memory c = studentCredentials[student][index];
+
+        return (
+            c.cidHash,
+            c.title,
+            c.issuedOn,
+            c.revoked,
+            c.issuer
+        );
+    }
+
+    function verifyCredential(
+        address student,
+        bytes32 cidHash
+    )
+        external
+        view
+        returns (bool)
+    {
+        Credential[] memory creds = studentCredentials[student];
+
+        for (uint256 i = 0; i < creds.length; i++) {
+            if (
+                creds[i].cidHash == cidHash &&
+                creds[i].revoked == false
+            ) {
                 return true;
             }
         }

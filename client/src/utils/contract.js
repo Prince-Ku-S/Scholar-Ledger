@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import ScholarLedger from "../abi/ScholarLedger.json";
 
-const CONTRACT_ADDRESS = "0x8A0Df224fA36753b4a1286071a02266898fA4b88";
+const CONTRACT_ADDRESS = "0x4f78B06602a3f022F5f8D7C20b8b5393F4b96d15";
 const GANACHE_CHAIN_ID = "0x539"; // 1337 in hex
 
 export const getContract = async () => {
