@@ -2,11 +2,17 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { getReadOnlyContract } from "../utils/readOnlyContract";
+import {
+  getStudentByStudentId,
+  getStudentByWallet,
+} from "../utils/studentRegistryApi";
 
 // Public student profile — shows every credential a wallet has been issued.
 // No login, no wallet required. Read-only via JsonRpcProvider.
 function PublicProfile() {
-  const { address } = useParams();
+  const { address, studentId } = useParams();
+  const [resolvedAddress, setResolvedAddress] = useState("");
+  const [resolvedStudentId, setResolvedStudentId] = useState("");
   const [credentials, setCredentials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -17,11 +23,29 @@ function PublicProfile() {
       setLoading(true);
       setError("");
       try {
+        let wallet = address || "";
+        let idLabel = studentId || "";
+
+        if (studentId) {
+          const student = await getStudentByStudentId(studentId.toUpperCase());
+          wallet = student.walletAddress;
+          idLabel = student.studentId;
+        } else if (address) {
+          try {
+            const student = await getStudentByWallet(address);
+            idLabel = student.studentId;
+          } catch {
+            // profile can still load by wallet only
+          }
+        }
+
+        setResolvedAddress(wallet);
+        setResolvedStudentId(idLabel);
         const contract = getReadOnlyContract();
-        const count = Number(await contract.getCredentialCount(address));
+        const count = Number(await contract.getCredentialCount(wallet));
         const records = [];
         for (let i = 0; i < count; i++) {
-          const cred = await contract.getCredential(address, i);
+          const cred = await contract.getCredential(wallet, i);
           records.push({
             index: i,
             cidHash: cred[0],
@@ -40,7 +64,7 @@ function PublicProfile() {
       }
     };
     load();
-  }, [address]);
+  }, [address, studentId]);
 
   const profileUrl = window.location.href;
   const copyProfile = async () => {
@@ -73,8 +97,13 @@ function PublicProfile() {
       >
         <div style={{ flex: 1, minWidth: 280 }}>
           <h1 style={{ margin: 0 }}>Student Credential Profile</h1>
+          {resolvedStudentId && (
+            <p style={{ margin: "8px 0 0 0", opacity: 0.95 }}>
+              Student ID: {resolvedStudentId}
+            </p>
+          )}
           <p style={{ margin: "8px 0 0 0", opacity: 0.85, wordBreak: "break-all" }}>
-            {address}
+            {resolvedAddress}
           </p>
           <div style={{ marginTop: "14px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
             <button
@@ -169,7 +198,7 @@ function PublicProfile() {
           {credentials.map((cred) => (
             <Link
               key={cred.index}
-              to={`/verify/${address}/${cred.index}`}
+              to={`/verify/${resolvedAddress}/${cred.index}`}
               style={{
                 display: "block",
                 padding: "16px",

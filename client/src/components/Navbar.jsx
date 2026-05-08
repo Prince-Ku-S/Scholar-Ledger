@@ -3,37 +3,19 @@ import { Link, useLocation } from "react-router-dom";
 function Navbar() {
   const location = useLocation();
 
-  const linkStyle = (path) => ({
-    padding: "8px 14px",
-    textDecoration: "none",
-    color: location.pathname === path ? "#fff" : "#14285a",
-    backgroundColor: location.pathname === path ? "#14285a" : "transparent",
-    borderRadius: "4px",
-    fontWeight: "500",
-  });
+  const linkClass = (path) =>
+    `nav-link ${location.pathname === path ? "nav-link-active" : ""}`;
 
   return (
-    <nav
-      style={{
-        display: "flex",
-        gap: "8px",
-        padding: "12px 0",
-        borderBottom: "1px solid #ddd",
-        marginBottom: "30px",
-        flexWrap: "wrap",
-        alignItems: "center",
-      }}
-    >
-      <h2 style={{ margin: 0, marginRight: "20px", color: "#14285a" }}>
-        Scholar Ledger
-      </h2>
-      <Link to="/" style={linkStyle("/")}>
+    <nav className="navbar">
+      <h2 className="brand">Scholar Ledger</h2>
+      <Link to="/" className={linkClass("/")}>
         Home
       </Link>
-      <Link to="/verify" style={linkStyle("/verify")}>
+      <Link to="/verify" className={linkClass("/verify")}>
         Verify
       </Link>
-      <Link to="/scan" style={linkStyle("/scan")}>
+      <Link to="/scan" className={linkClass("/scan")}>
         Scan QR
       </Link>
     </nav>

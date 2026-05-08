@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { getContract } from "../utils/contract";
 import { useWallet } from "../context/WalletContext";
 import CredentialCard from "./CredentialCard";
+import {
+  getStudentByStudentId,
+  getStudentByWallet,
+} from "../utils/studentRegistryApi";
 
 function StudentDashboard() {
   const { account, isAdmin } = useWallet();
@@ -13,11 +17,13 @@ function StudentDashboard() {
   // Tracks which student's credentials are currently displayed.
   // Defaults to the connected wallet; admins can look up any address.
   const [viewedStudent, setViewedStudent] = useState("");
+  const [viewedStudentId, setViewedStudentId] = useState("");
   const [studentInput, setStudentInput] = useState("");
 
   useEffect(() => {
     if (!account) return;
     setViewedStudent(account);
+    setViewedStudentId("");
   }, [account]);
 
   useEffect(() => {
@@ -54,15 +60,37 @@ function StudentDashboard() {
     }
   };
 
-  const handleLookup = () => {
-    const addr = studentInput.trim();
-    if (!addr) return;
-    setViewedStudent(addr);
+  const handleLookup = async () => {
+    const input = studentInput.trim();
+    if (!input) return;
+
+    if (/^0x[a-fA-F0-9]{40}$/.test(input)) {
+      setViewedStudent(input);
+      try {
+        const student = await getStudentByWallet(input);
+        setViewedStudentId(student.studentId || "");
+      } catch {
+        setViewedStudentId("");
+      }
+      return;
+    }
+
+    try {
+      const student = await getStudentByStudentId(input.toUpperCase());
+      setViewedStudent(student.walletAddress);
+      setViewedStudentId(student.studentId || input.toUpperCase());
+    } catch (err) {
+      setError(
+        err?.response?.data?.error ||
+          "Student ID not found in the registry. Register this student in Issue Credential."
+      );
+    }
   };
 
   const handleViewOwn = () => {
     setStudentInput("");
     setViewedStudent(account);
+    setViewedStudentId("");
   };
 
   const handleRevoke = async (studentAddress, index) => {
@@ -79,47 +107,50 @@ function StudentDashboard() {
 
   if (!account) {
     return (
-      <div style={{ marginTop: "20px" }}>
+      <div className="app-card" style={{ marginTop: "20px" }}>
         <p>Connect your wallet to view credentials.</p>
       </div>
     );
   }
 
   return (
-    <div style={{ marginTop: "30px" }}>
+    <div className="app-card" style={{ marginTop: "24px" }}>
       <h2>Credential Dashboard</h2>
 
       {isAdmin && (
-        <div style={{ marginBottom: "16px" }}>
+        <div className="inline-controls">
           <input
             type="text"
-            placeholder="Enter student wallet address to view"
+            placeholder="Enter student ID or wallet address"
             value={studentInput}
             onChange={(e) => setStudentInput(e.target.value)}
-            style={{ width: "420px", marginRight: "8px" }}
+            className="input-text"
           />
-          <button onClick={handleLookup}>View Student</button>
-          <button onClick={handleViewOwn} style={{ marginLeft: "8px" }}>
+          <button className="btn btn-primary" onClick={handleLookup}>
+            View Student
+          </button>
+          <button className="btn btn-secondary" onClick={handleViewOwn}>
             View My Credentials
           </button>
         </div>
       )}
 
       {viewedStudent && (
-        <p style={{ fontSize: "13px", color: "#555", marginBottom: "12px" }}>
+        <p className="muted-text" style={{ marginBottom: "12px" }}>
           Showing credentials for: {viewedStudent}
+          {viewedStudentId ? ` (ID: ${viewedStudentId})` : ""}
         </p>
       )}
 
-      {loading && <p>Loading credentials...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {loading && <p className="muted-text">Loading credentials...</p>}
+      {error && <p className="error-text">{error}</p>}
 
       {!loading && !error && credentials.length === 0 && (
-        <p>No credentials issued yet.</p>
+        <p className="muted-text">No credentials issued yet.</p>
       )}
 
       {!loading && credentials.length > 0 && (
-        <p style={{ fontWeight: "bold", marginBottom: "20px" }}>
+        <p className="stats-chip">
           Total Credentials: {credentials.length}
         </p>
       )}

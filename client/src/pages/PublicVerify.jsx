@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { getReadOnlyContract } from "../utils/readOnlyContract";
+import { getStudentByWallet } from "../utils/studentRegistryApi";
 
 // Public credential verification — no wallet required.
 // Reads the credential at the given (address, index) directly via JsonRpcProvider.
 function PublicVerify() {
   const { address, index } = useParams();
+  const [studentId, setStudentId] = useState("");
   const [credential, setCredential] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -46,6 +48,12 @@ function PublicVerify() {
     };
     load();
   }, [address, index]);
+
+  useEffect(() => {
+    getStudentByWallet(address)
+      .then((student) => setStudentId(student.studentId || ""))
+      .catch(() => setStudentId(""));
+  }, [address]);
 
   if (loading) {
     return (
@@ -218,7 +226,7 @@ function PublicVerify() {
         </div>
         <div style={{ flex: 1, minWidth: 200 }}>
           <p style={{ margin: "0 0 10px 0", fontSize: "13px" }}>
-            <Link to={`/profile/${address}`}>
+            <Link to={studentId ? `/profile/student/${studentId}` : `/profile/${address}`}>
               View student's full credential profile →
             </Link>
           </p>

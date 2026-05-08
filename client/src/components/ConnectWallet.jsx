@@ -5,14 +5,14 @@ function ConnectWallet() {
   const { account, isAdmin, connectWallet } = useWallet();
 
   return (
-    <div style={{ marginBottom: "16px" }}>
-      <button onClick={connectWallet}>
+    <div className="app-card wallet-card">
+      <button className="btn btn-primary" onClick={connectWallet}>
         {account ? "Wallet Connected" : "Connect Wallet"}
       </button>
       {account && (
-        <p style={{ margin: "6px 0 0" }}>
+        <p className="muted-text">
           Connected: {account}{" "}
-          <strong style={{ color: isAdmin ? "#0066cc" : "#333" }}>
+          <strong className={isAdmin ? "role-admin" : "role-student"}>
             ({isAdmin ? "Admin" : "Student"})
           </strong>
         </p>

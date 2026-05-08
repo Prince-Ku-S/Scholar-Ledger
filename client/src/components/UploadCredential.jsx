@@ -3,10 +3,15 @@ import { uploadToIPFS } from "../utils/ipfs";
 import { getContract } from "../utils/contract";
 import { ethers } from "ethers";
 import { useWallet } from "../context/WalletContext";
+import {
+  getStudentByStudentId,
+  upsertStudent,
+} from "../utils/studentRegistryApi";
 
 function UploadCredential() {
   const { isAdmin } = useWallet();
-  const [studentAddress, setStudentAddress] = useState("");
+  const [studentId, setStudentId] = useState("");
+  const [studentWallet, setStudentWallet] = useState("");
   const [title, setTitle] = useState("");
   const [file, setFile] = useState(null);
   const [cid, setCid] = useState("");
@@ -22,8 +27,8 @@ function UploadCredential() {
     setCid("");
 
     // BUG-04: all validation runs before the IPFS upload
-    if (!studentAddress.trim()) {
-      setError("Please enter the student wallet address.");
+    if (!studentId.trim()) {
+      setError("Please enter a student ID.");
       return;
     }
     if (!title.trim()) {
@@ -37,6 +42,24 @@ function UploadCredential() {
 
     // BUG-05: wrapped in try/catch so every failure surfaces a readable message
     try {
+      let walletAddress = "";
+      const normalizedStudentId = studentId.trim().toUpperCase();
+      try {
+        const existingStudent = await getStudentByStudentId(normalizedStudentId);
+        walletAddress = existingStudent.walletAddress;
+      } catch {
+        if (!studentWallet.trim()) {
+          throw new Error(
+            "Student ID not found in registry. Enter wallet address to register this student first."
+          );
+        }
+        const registered = await upsertStudent({
+          studentId: normalizedStudentId,
+          walletAddress: studentWallet.trim(),
+        });
+        walletAddress = registered.walletAddress;
+      }
+
       setStatus("Uploading to IPFS...");
       const ipfsCid = await uploadToIPFS(file);
       setCid(ipfsCid);
@@ -46,7 +69,7 @@ function UploadCredential() {
       const cidHash = ethers.keccak256(ethers.toUtf8Bytes(ipfsCid));
 
       const tx = await contract.issueCredential(
-        studentAddress.trim(),
+        walletAddress,
         cidHash,
         ipfsCid,
         title.trim()
@@ -54,7 +77,8 @@ function UploadCredential() {
       await tx.wait();
 
       setStatus("✅ Credential issued successfully!");
-      setStudentAddress("");
+      setStudentId("");
+      setStudentWallet("");
       setTitle("");
       setFile(null);
     } catch (err) {
@@ -64,34 +88,46 @@ function UploadCredential() {
   };
 
   return (
-    <div style={{ marginTop: "40px" }}>
+    <div className="app-card" style={{ marginTop: "24px" }}>
       <h3>Issue Credential (Admin Only)</h3>
+      <p className="muted-text" style={{ marginBottom: "12px" }}>
+        Enter a student ID. If it is a new student, add wallet address once to
+        create the registry mapping in MongoDB.
+      </p>
 
-      {/* BUG-01: admin now specifies the target student address */}
       <input
         type="text"
-        placeholder="Student Wallet Address (0x...)"
-        value={studentAddress}
-        onChange={(e) => setStudentAddress(e.target.value)}
-        style={{ width: "420px", display: "block", marginBottom: "10px" }}
+        placeholder="Student ID (e.g. CSE2026-001)"
+        value={studentId}
+        onChange={(e) => setStudentId(e.target.value)}
+        className="input-text"
+      />
+      <input
+        type="text"
+        placeholder="Student Wallet Address (required only for first-time mapping)"
+        value={studentWallet}
+        onChange={(e) => setStudentWallet(e.target.value)}
+        className="input-text"
       />
       <input
         type="text"
         placeholder="Credential Title (e.g. BTech Semester 6)"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        style={{ width: "420px", display: "block", marginBottom: "10px" }}
+        className="input-text"
       />
       <input
         type="file"
         onChange={(e) => setFile(e.target.files[0])}
-        style={{ display: "block", marginBottom: "10px" }}
+        className="input-file"
       />
-      <button onClick={handleUploadAndStore}>Upload & Issue Credential</button>
+      <button className="btn btn-primary" onClick={handleUploadAndStore}>
+        Upload & Issue Credential
+      </button>
 
-      {cid && <p>📌 IPFS CID: {cid}</p>}
-      {status && <p style={{ color: "green" }}>{status}</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {cid && <p className="muted-text">IPFS CID: {cid}</p>}
+      {status && <p className="success-text">{status}</p>}
+      {error && <p className="error-text">{error}</p>}
     </div>
   );
 }

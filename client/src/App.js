@@ -6,6 +6,7 @@ import VerifyManual from "./pages/VerifyManual";
 import PublicVerify from "./pages/PublicVerify";
 import PublicProfile from "./pages/PublicProfile";
 import QrScanner from "./pages/QrScanner";
+import "./App.css";
 
 // Routes:
 //   /                         — connected-wallet dashboard (admin + student)
@@ -17,18 +18,22 @@ function App() {
   return (
     <BrowserRouter>
       <WalletProvider>
-        <div style={{ padding: "20px 40px 60px", maxWidth: "1100px", margin: "0 auto" }}>
+        <div className="app-shell">
           <Navbar />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/verify" element={<VerifyManual />} />
             <Route path="/verify/:address/:index" element={<PublicVerify />} />
             <Route path="/profile/:address" element={<PublicProfile />} />
+            <Route
+              path="/profile/student/:studentId"
+              element={<PublicProfile />}
+            />
             <Route path="/scan" element={<QrScanner />} />
             <Route
               path="*"
               element={
-                <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                <div className="app-card app-empty-state">
                   <h2>404 — Page Not Found</h2>
                 </div>
               }

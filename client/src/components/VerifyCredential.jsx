@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { getReadOnlyContract } from "../utils/readOnlyContract";
 import { ethers } from "ethers";
+import { getStudentByStudentId } from "../utils/studentRegistryApi";
 
 // Manual verification form. Uses the read-only provider so verifiers
 // without MetaMask can still verify credentials.
 function VerifyCredential() {
-  const [studentAddress, setStudentAddress] = useState("");
+  const [studentId, setStudentId] = useState("");
   const [cid, setCid] = useState("");
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
@@ -15,8 +16,8 @@ function VerifyCredential() {
     setResult("");
     setError("");
 
-    if (!studentAddress.trim()) {
-      setError("Please enter the student wallet address.");
+    if (!studentId.trim()) {
+      setError("Please enter the student ID.");
       return;
     }
     if (!cid.trim()) {
@@ -26,10 +27,11 @@ function VerifyCredential() {
 
     setLoading(true);
     try {
+      const student = await getStudentByStudentId(studentId.trim().toUpperCase());
       const contract = getReadOnlyContract();
       const cidHash = ethers.keccak256(ethers.toUtf8Bytes(cid.trim()));
       const isValid = await contract.verifyCredential(
-        studentAddress.trim(),
+        student.walletAddress,
         cidHash
       );
       setResult(
@@ -48,9 +50,9 @@ function VerifyCredential() {
 
       <input
         type="text"
-        placeholder="Student Wallet Address (0x...)"
-        value={studentAddress}
-        onChange={(e) => setStudentAddress(e.target.value)}
+        placeholder="Student ID (e.g. CSE2026-001)"
+        value={studentId}
+        onChange={(e) => setStudentId(e.target.value)}
         style={{ display: "block", width: "420px", marginBottom: "10px" }}
       />
       <input
