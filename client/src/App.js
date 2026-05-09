@@ -20,25 +20,31 @@ function App() {
       <WalletProvider>
         <div className="app-shell">
           <Navbar />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/verify" element={<VerifyManual />} />
-            <Route path="/verify/:address/:index" element={<PublicVerify />} />
-            <Route path="/profile/:address" element={<PublicProfile />} />
-            <Route
-              path="/profile/student/:studentId"
-              element={<PublicProfile />}
-            />
-            <Route path="/scan" element={<QrScanner />} />
-            <Route
-              path="*"
-              element={
-                <div className="app-card app-empty-state">
-                  <h2>404 — Page Not Found</h2>
-                </div>
-              }
-            />
-          </Routes>
+          <div style={{ paddingTop: 8 }}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/verify" element={<VerifyManual />} />
+              <Route path="/verify/:address/:index" element={<PublicVerify />} />
+              <Route path="/profile/:address" element={<PublicProfile />} />
+              <Route
+                path="/profile/student/:studentId"
+                element={<PublicProfile />}
+              />
+              <Route path="/scan" element={<QrScanner />} />
+              <Route
+                path="*"
+                element={
+                  <div className="app-card app-empty-state">
+                    <p style={{ fontSize: 32, margin: "0 0 12px" }}>🔍</p>
+                    <h2>404 — Page Not Found</h2>
+                    <p style={{ color: "var(--clr-text-muted)" }}>
+                      The page you're looking for doesn't exist.
+                    </p>
+                  </div>
+                }
+              />
+            </Routes>
+          </div>
         </div>
       </WalletProvider>
     </BrowserRouter>

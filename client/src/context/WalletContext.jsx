@@ -6,6 +6,7 @@ const WalletContext = createContext(null);
 export function WalletProvider({ children }) {
   const [account, setAccount] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [walletError, setWalletError] = useState("");
 
   // Resolves admin status for a given address without triggering MetaMask popup
   const resolveAdmin = async (addr) => {
@@ -18,24 +19,30 @@ export function WalletProvider({ children }) {
     }
   };
 
-  // BUG-07: single shared connect entry-point used by ConnectWallet button
+  // Single shared connect entry-point used by ConnectWallet button
   const connectWallet = async () => {
+    setWalletError("");
     if (!window.ethereum) {
-      alert("MetaMask is not installed. Please install it to use this app.");
+      setWalletError("no_metamask");
       return;
     }
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts",
-    });
-    const addr = accounts[0];
-    setAccount(addr);
-    await resolveAdmin(addr);
+    try {
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+      const addr = accounts[0];
+      setAccount(addr);
+      await resolveAdmin(addr);
+    } catch {
+      // User rejected the connection prompt
+      setWalletError("rejected");
+    }
   };
 
   useEffect(() => {
     if (!window.ethereum) return;
 
-    // BUG-09: use eth_accounts (no popup) to restore an already-connected session
+    // Use eth_accounts (no popup) to restore an already-connected session
     window.ethereum
       .request({ method: "eth_accounts" })
       .then(async (accounts) => {
@@ -45,7 +52,7 @@ export function WalletProvider({ children }) {
         }
       });
 
-    // BUG-08: keep wallet + admin state in sync when user switches accounts in MetaMask
+    // Keep wallet + admin state in sync when user switches accounts in MetaMask
     const handleAccountsChanged = async (accounts) => {
       if (accounts.length === 0) {
         setAccount("");
@@ -63,7 +70,7 @@ export function WalletProvider({ children }) {
   }, []);
 
   return (
-    <WalletContext.Provider value={{ account, isAdmin, connectWallet }}>
+    <WalletContext.Provider value={{ account, isAdmin, connectWallet, walletError }}>
       {children}
     </WalletContext.Provider>
   );

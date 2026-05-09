@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getContract } from "../utils/contract";
 import { useWallet } from "../context/WalletContext";
 import CredentialCard from "./CredentialCard";
+import AddressPill from "./AddressPill";
 import {
   getStudentByStudentId,
   getStudentByWallet,
@@ -82,7 +83,7 @@ function StudentDashboard() {
     } catch (err) {
       setError(
         err?.response?.data?.error ||
-          "Student ID not found in the registry. Register this student in Issue Credential."
+          "Student ID not found. Make sure the student is registered before looking them up."
       );
     }
   };
@@ -107,52 +108,74 @@ function StudentDashboard() {
 
   if (!account) {
     return (
-      <div className="app-card" style={{ marginTop: "20px" }}>
-        <p>Connect your wallet to view credentials.</p>
+      <div className="app-card" style={{ marginTop: 20 }}>
+        <p className="muted-text">Connect your wallet above to view your credentials.</p>
       </div>
     );
   }
 
   return (
-    <div className="app-card" style={{ marginTop: "24px" }}>
-      <h2>Credential Dashboard</h2>
+    <div className="app-card" style={{ marginTop: 24 }}>
+      <h2 className="section-title">My Credentials</h2>
 
       {isAdmin && (
-        <div className="inline-controls">
+        <div className="inline-controls" style={{ marginBottom: 16 }}>
           <input
             type="text"
-            placeholder="Enter student ID or wallet address"
+            placeholder="Student ID (e.g. CSE2026-001) or wallet address"
             value={studentInput}
             onChange={(e) => setStudentInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleLookup()}
             className="input-text"
+            style={{ marginBottom: 0 }}
+            id="admin-student-lookup"
           />
           <button className="btn btn-primary" onClick={handleLookup}>
-            View Student
+            🔍 Look Up Student
           </button>
           <button className="btn btn-secondary" onClick={handleViewOwn}>
-            View My Credentials
+            View My Own
           </button>
         </div>
       )}
 
       {viewedStudent && (
-        <p className="muted-text" style={{ marginBottom: "12px" }}>
-          Showing credentials for: {viewedStudent}
-          {viewedStudentId ? ` (ID: ${viewedStudentId})` : ""}
+        <p className="muted-text" style={{ marginBottom: 12 }}>
+          Showing credentials for:{" "}
+          {viewedStudentId ? (
+            <strong style={{ color: "var(--clr-primary)" }}>{viewedStudentId}</strong>
+          ) : null}
+          {" "}
+          <AddressPill address={viewedStudent} />
         </p>
       )}
 
-      {loading && <p className="muted-text">Loading credentials...</p>}
-      {error && <p className="error-text">{error}</p>}
+      {loading && (
+        <div style={{ marginTop: 16 }}>
+          <div className="skeleton skeleton-line wide" />
+          <div className="skeleton skeleton-line medium" />
+          <div className="skeleton skeleton-line narrow" />
+        </div>
+      )}
+
+      {error && (
+        <div className="banner banner-error">
+          <span>⚠️</span>
+          <span>{error}</span>
+        </div>
+      )}
 
       {!loading && !error && credentials.length === 0 && (
-        <p className="muted-text">No credentials issued yet.</p>
+        <div className="app-empty-state">
+          <p style={{ fontSize: 32, margin: "0 0 8px" }}>🎓</p>
+          <p>No credentials have been issued yet.</p>
+        </div>
       )}
 
       {!loading && credentials.length > 0 && (
-        <p className="stats-chip">
-          Total Credentials: {credentials.length}
-        </p>
+        <span className="stats-chip">
+          {credentials.length} credential{credentials.length !== 1 ? "s" : ""} on file
+        </span>
       )}
 
       {!loading &&

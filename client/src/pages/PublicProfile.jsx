@@ -6,9 +6,12 @@ import {
   getStudentByStudentId,
   getStudentByWallet,
 } from "../utils/studentRegistryApi";
+import AddressPill from "../components/AddressPill";
 
-// Public student profile — shows every credential a wallet has been issued.
-// No login, no wallet required. Read-only via JsonRpcProvider.
+/**
+ * Public student profile — shows every credential a wallet has been issued.
+ * No login, no wallet required. Read-only via JsonRpcProvider.
+ */
 function PublicProfile() {
   const { address, studentId } = useParams();
   const [resolvedAddress, setResolvedAddress] = useState("");
@@ -58,7 +61,7 @@ function PublicProfile() {
         }
         setCredentials(records);
       } catch (err) {
-        setError(err.reason || err.message || "Could not load profile.");
+        setError(err.reason || err.message || "Could not load this profile.");
       } finally {
         setLoading(false);
       }
@@ -81,162 +84,109 @@ function PublicProfile() {
   const revoked = credentials.filter((c) => c.revoked);
 
   return (
-    <div style={{ maxWidth: "920px", margin: "0 auto" }}>
-      <div
-        style={{
-          background: "linear-gradient(135deg, #14285a 0%, #2a4a9c 100%)",
-          color: "white",
-          padding: "30px",
-          borderRadius: "10px",
-          marginBottom: "24px",
-          display: "flex",
-          gap: "20px",
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}
-      >
+    <div style={{ maxWidth: 920, margin: "0 auto" }}>
+      {/* ── Profile hero ─────────────────────────────────── */}
+      <div className="profile-hero">
         <div style={{ flex: 1, minWidth: 280 }}>
-          <h1 style={{ margin: 0 }}>Student Credential Profile</h1>
+          <h1>Academic Credential Profile</h1>
+
           {resolvedStudentId && (
-            <p style={{ margin: "8px 0 0 0", opacity: 0.95 }}>
-              Student ID: {resolvedStudentId}
-            </p>
+            <div className="student-id-badge">
+              🎓 {resolvedStudentId}
+            </div>
           )}
-          <p style={{ margin: "8px 0 0 0", opacity: 0.85, wordBreak: "break-all" }}>
-            {resolvedAddress}
-          </p>
-          <div style={{ marginTop: "14px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            <button
-              onClick={copyProfile}
-              style={{
-                background: "white",
-                color: "#14285a",
-                border: "none",
-                padding: "8px 14px",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontWeight: 500,
-              }}
-            >
-              {copied ? "Link Copied!" : "Copy Profile Link"}
+
+          {resolvedAddress && (
+            <div style={{ marginTop: 6 }}>
+              <AddressPill address={resolvedAddress} short={false} />
+            </div>
+          )}
+
+          <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button className="action-btn" onClick={copyProfile}>
+              {copied ? "✓ Link Copied!" : "🔗 Copy Profile Link"}
             </button>
           </div>
         </div>
-        <div style={{ background: "white", padding: "10px", borderRadius: "8px" }}>
+
+        {/* QR code */}
+        <div className="qr-frame">
           <QRCodeSVG value={profileUrl} size={110} level="M" />
         </div>
       </div>
 
-      {loading && <p>Loading credentials from blockchain...</p>}
-      {error && (
-        <p style={{ color: "#b00020", padding: "12px", background: "#ffe6e6", borderRadius: "6px" }}>
-          {error}
-        </p>
-      )}
-
-      {!loading && !error && credentials.length === 0 && (
-        <div
-          style={{
-            padding: "40px",
-            textAlign: "center",
-            background: "#f5f5f5",
-            borderRadius: "8px",
-          }}
-        >
-          <p>No credentials have been issued to this address yet.</p>
+      {/* ── Loading ───────────────────────────────────────── */}
+      {loading && (
+        <div className="app-card" style={{ marginBottom: 16 }}>
+          <div className="skeleton skeleton-line wide" />
+          <div className="skeleton skeleton-line medium" />
+          <div className="skeleton skeleton-line narrow" />
         </div>
       )}
 
+      {/* ── Error ────────────────────────────────────────── */}
+      {error && (
+        <div className="banner banner-error">
+          <span>⚠️</span>
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* ── No credentials yet ───────────────────────────── */}
+      {!loading && !error && credentials.length === 0 && (
+        <div className="app-empty-state app-card">
+          <p style={{ fontSize: 32, margin: "0 0 8px" }}>🎓</p>
+          <p>No credentials have been issued to this student yet.</p>
+        </div>
+      )}
+
+      {/* ── Stats + credential list ───────────────────────── */}
       {!loading && !error && credentials.length > 0 && (
         <>
-          <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
-            <div
-              style={{
-                flex: 1,
-                padding: "16px",
-                background: "#e6ffe6",
-                borderRadius: "6px",
-                textAlign: "center",
-              }}
-            >
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#0a7d24" }}>
-                {active.length}
-              </div>
-              <div style={{ fontSize: "13px", color: "#555" }}>Active Credentials</div>
+          <div className="stat-grid">
+            <div className="stat-box stat-box-active">
+              <div className="stat-value">{active.length}</div>
+              <div className="stat-label">Active</div>
             </div>
-            <div
-              style={{
-                flex: 1,
-                padding: "16px",
-                background: "#ffe6e6",
-                borderRadius: "6px",
-                textAlign: "center",
-              }}
-            >
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#b00020" }}>
-                {revoked.length}
-              </div>
-              <div style={{ fontSize: "13px", color: "#555" }}>Revoked</div>
+            <div className="stat-box stat-box-revoked">
+              <div className="stat-value">{revoked.length}</div>
+              <div className="stat-label">Revoked</div>
             </div>
-            <div
-              style={{
-                flex: 1,
-                padding: "16px",
-                background: "#eef2ff",
-                borderRadius: "6px",
-                textAlign: "center",
-              }}
-            >
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#14285a" }}>
-                {credentials.length}
-              </div>
-              <div style={{ fontSize: "13px", color: "#555" }}>Total Issued</div>
+            <div className="stat-box stat-box-total">
+              <div className="stat-value">{credentials.length}</div>
+              <div className="stat-label">Total Issued</div>
             </div>
           </div>
 
-          <h2>Credentials</h2>
+          <h2 style={{ marginBottom: 14 }}>Credentials</h2>
           {credentials.map((cred) => (
             <Link
               key={cred.index}
               to={`/verify/${resolvedAddress}/${cred.index}`}
-              style={{
-                display: "block",
-                padding: "16px",
-                marginBottom: "12px",
-                background: cred.revoked ? "#ffe6e6" : "#e6ffe6",
-                border: "1px solid #ccc",
-                borderRadius: "8px",
-                textDecoration: "none",
-                color: "inherit",
-              }}
+              style={{ textDecoration: "none", color: "inherit", display: "block" }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
-                <div style={{ flex: 1, minWidth: 200 }}>
-                  <h3 style={{ margin: "0 0 6px 0" }}>{cred.title}</h3>
-                  <p style={{ margin: "2px 0", fontSize: "13px" }}>
-                    Issued On: {cred.issuedOn}
-                  </p>
-                  <p style={{ margin: "2px 0", fontSize: "13px" }}>
-                    Issuer: {cred.issuer.slice(0, 6)}...{cred.issuer.slice(-4)}
-                  </p>
+              <div
+                className={`credential-card${cred.revoked ? " is-revoked" : ""}`}
+                style={{ cursor: "pointer" }}
+              >
+                <div className="cred-meta" style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                    <h4 style={{ margin: 0 }}>{cred.title}</h4>
+                    <span className={cred.revoked ? "badge badge-revoked" : "badge badge-active"}>
+                      {cred.revoked ? "Revoked" : "Active"}
+                    </span>
+                  </div>
+                  <div className="meta-row">
+                    <strong>Issued On:</strong>
+                    <span>{cred.issuedOn}</span>
+                  </div>
+                  <div className="meta-row">
+                    <strong>Issued By:</strong>
+                    <AddressPill address={cred.issuer} />
+                  </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <span
-                    style={{
-                      display: "inline-block",
-                      padding: "4px 10px",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                      fontWeight: "bold",
-                      background: cred.revoked ? "#b00020" : "#0a7d24",
-                      color: "white",
-                    }}
-                  >
-                    {cred.revoked ? "REVOKED" : "ACTIVE"}
-                  </span>
-                  <p style={{ margin: "8px 0 0 0", fontSize: "11px", color: "#666" }}>
-                    Click to verify →
-                  </p>
+                <div style={{ alignSelf: "center", color: "var(--clr-primary)", fontWeight: 600, fontSize: 13 }}>
+                  Click to verify →
                 </div>
               </div>
             </Link>

@@ -8,14 +8,16 @@ function Navbar() {
 
   return (
     <nav className="navbar">
-      <h2 className="brand">Scholar Ledger</h2>
-      <Link to="/" className={linkClass("/")}>
+      <h2 className="brand">
+        🎓 Scholar<span>Ledger</span>
+      </h2>
+      <Link to="/" className={linkClass("/")} id="nav-home">
         Home
       </Link>
-      <Link to="/verify" className={linkClass("/verify")}>
-        Verify
+      <Link to="/verify" className={linkClass("/verify")} id="nav-verify">
+        Verify Credential
       </Link>
-      <Link to="/scan" className={linkClass("/scan")}>
+      <Link to="/scan" className={linkClass("/scan")} id="nav-scan">
         Scan QR
       </Link>
     </nav>

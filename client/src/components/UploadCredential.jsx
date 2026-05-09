@@ -18,7 +18,7 @@ function UploadCredential() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
-  // BUG-19: only admins can see this component
+  // Only admins can issue credentials
   if (!isAdmin) return null;
 
   const handleUploadAndStore = async () => {
@@ -26,9 +26,8 @@ function UploadCredential() {
     setStatus("");
     setCid("");
 
-    // BUG-04: all validation runs before the IPFS upload
     if (!studentId.trim()) {
-      setError("Please enter a student ID.");
+      setError("Please enter the student ID.");
       return;
     }
     if (!title.trim()) {
@@ -36,21 +35,21 @@ function UploadCredential() {
       return;
     }
     if (!file) {
-      setError("Please select a file.");
+      setError("Please select the credential document (PDF).");
       return;
     }
 
-    // BUG-05: wrapped in try/catch so every failure surfaces a readable message
     try {
       let walletAddress = "";
       const normalizedStudentId = studentId.trim().toUpperCase();
+
       try {
         const existingStudent = await getStudentByStudentId(normalizedStudentId);
         walletAddress = existingStudent.walletAddress;
       } catch {
         if (!studentWallet.trim()) {
           throw new Error(
-            "Student ID not found in registry. Enter wallet address to register this student first."
+            "This student ID isn't registered yet. Enter their wallet address below to register them first."
           );
         }
         const registered = await upsertStudent({
@@ -60,11 +59,11 @@ function UploadCredential() {
         walletAddress = registered.walletAddress;
       }
 
-      setStatus("Uploading to IPFS...");
+      setStatus("📤 Uploading document to secure storage…");
       const ipfsCid = await uploadToIPFS(file);
       setCid(ipfsCid);
 
-      setStatus("Storing credential hash on blockchain...");
+      setStatus("⛓️ Recording credential on the blockchain…");
       const contract = await getContract();
       const cidHash = ethers.keccak256(ethers.toUtf8Bytes(ipfsCid));
 
@@ -83,51 +82,93 @@ function UploadCredential() {
       setFile(null);
     } catch (err) {
       setStatus("");
-      setError(err.reason || err.message || "Transaction failed.");
+      setError(err.reason || err.message || "Something went wrong. Please try again.");
     }
   };
 
   return (
-    <div className="app-card" style={{ marginTop: "24px" }}>
-      <h3>Issue Credential (Admin Only)</h3>
-      <p className="muted-text" style={{ marginBottom: "12px" }}>
-        Enter a student ID. If it is a new student, add wallet address once to
-        create the registry mapping in MongoDB.
+    <div className="app-card" style={{ marginTop: 24 }}>
+      <h3 className="section-title">Issue a New Credential</h3>
+      <p className="muted-text" style={{ marginBottom: 16 }}>
+        Fill in the student's ID and upload their certificate document. If this is a new
+        student, also provide their wallet address to link their account.
       </p>
 
+      <label style={{ fontSize: 13, fontWeight: 600, color: "var(--clr-text-muted)", display: "block", marginBottom: 4 }}>
+        Student ID *
+      </label>
       <input
         type="text"
-        placeholder="Student ID (e.g. CSE2026-001)"
+        placeholder="e.g. CSE2026-001"
         value={studentId}
         onChange={(e) => setStudentId(e.target.value)}
         className="input-text"
+        id="issue-student-id"
       />
+
+      <label style={{ fontSize: 13, fontWeight: 600, color: "var(--clr-text-muted)", display: "block", marginBottom: 4 }}>
+        Student Wallet Address{" "}
+        <span style={{ fontWeight: 400, color: "var(--clr-text-light)" }}>
+          (only needed when registering a new student)
+        </span>
+      </label>
       <input
         type="text"
-        placeholder="Student Wallet Address (required only for first-time mapping)"
+        placeholder="0x… (leave blank if student is already registered)"
         value={studentWallet}
         onChange={(e) => setStudentWallet(e.target.value)}
         className="input-text"
+        id="issue-student-wallet"
       />
+
+      <label style={{ fontSize: 13, fontWeight: 600, color: "var(--clr-text-muted)", display: "block", marginBottom: 4 }}>
+        Credential Title *
+      </label>
       <input
         type="text"
-        placeholder="Credential Title (e.g. BTech Semester 6)"
+        placeholder="e.g. BTech Semester 6 Transcript"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         className="input-text"
+        id="issue-cred-title"
       />
+
+      <label style={{ fontSize: 13, fontWeight: 600, color: "var(--clr-text-muted)", display: "block", marginBottom: 6 }}>
+        Credential Document (PDF) *
+      </label>
       <input
         type="file"
+        accept=".pdf,.png,.jpg,.jpeg"
         onChange={(e) => setFile(e.target.files[0])}
         className="input-file"
+        id="issue-cred-file"
       />
-      <button className="btn btn-primary" onClick={handleUploadAndStore}>
-        Upload & Issue Credential
+
+      <button
+        className="btn btn-primary"
+        onClick={handleUploadAndStore}
+        style={{ marginTop: 6 }}
+        id="issue-cred-btn"
+      >
+        🚀 Issue Credential
       </button>
 
-      {cid && <p className="muted-text">IPFS CID: {cid}</p>}
-      {status && <p className="success-text">{status}</p>}
-      {error && <p className="error-text">{error}</p>}
+      {status && (
+        <div className="banner banner-success" style={{ marginTop: 14 }}>
+          <span>{status}</span>
+        </div>
+      )}
+      {error && (
+        <div className="banner banner-error" style={{ marginTop: 14 }}>
+          <span>⚠️</span>
+          <span>{error}</span>
+        </div>
+      )}
+      {cid && (
+        <p className="muted-text" style={{ marginTop: 8 }}>
+          Document ID: <code style={{ fontSize: 11 }}>{cid}</code>
+        </p>
+      )}
     </div>
   );
 }

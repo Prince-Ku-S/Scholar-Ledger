@@ -1,23 +1,74 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  background: #f5f7fb;
-  color: #0f172a;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* Primary palette — red/orange/white */
+  --clr-primary:       #c0392b;
+  --clr-primary-dark:  #962d22;
+  --clr-primary-light: #e74c3c;
+  --clr-accent:        #e67e22;
+  --clr-accent-light:  #f39c12;
+  --clr-surface:       #ffffff;
+  --clr-bg:            #fdf4f2;
+  --clr-bg-alt:        #fff8f6;
+  --clr-border:        #f0d0ca;
+  --clr-text:          #1a0800;
+  --clr-text-muted:    #7a4035;
+  --clr-text-light:    #b06050;
+  --clr-success:       #1a7f37;
+  --clr-success-bg:    #edfaef;
+  --clr-error:         #c0392b;
+  --clr-error-bg:      #fdecea;
+  --clr-revoked:       #7a0000;
+  --clr-revoked-bg:    #ffe0de;
+
+  /* Shadows */
+  --shadow-sm:   0 1px 4px rgba(192,57,43,0.08);
+  --shadow-md:   0 4px 18px rgba(192,57,43,0.12);
+  --shadow-lg:   0 8px 32px rgba(192,57,43,0.18);
+
+  /* Radii */
+  --radius-sm:  6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+
+  /* Gradient brand */
+  --grad-brand: linear-gradient(135deg, var(--clr-primary) 0%, var(--clr-accent) 100%);
+  --grad-brand-dark: linear-gradient(135deg, var(--clr-primary-dark) 0%, var(--clr-primary) 100%);
 }
 
-* {
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--clr-bg);
+  color: var(--clr-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
 a {
-  color: #1d4ed8;
+  color: var(--clr-primary);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+a:hover {
+  color: var(--clr-accent);
+  text-decoration: underline;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: 'Fira Code', source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
+
+h1, h2, h3, h4 {
+  line-height: 1.25;
+  font-weight: 700;
+  color: var(--clr-text);
+  margin-top: 0;
+}
+

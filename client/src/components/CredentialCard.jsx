@@ -1,17 +1,22 @@
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { generateCredentialPDF } from "../utils/pdfGenerator";
+import AddressPill from "./AddressPill";
 
 const IPFS_GATEWAY =
   process.env.REACT_APP_IPFS_GATEWAY || "https://ipfs.io/ipfs/";
 
-// Reusable display for a single credential.
-// - Shows full metadata including the live IPFS CID and a link to view the doc
-// - QR code encoding the public verification URL
-// - Buttons: download PDF, copy verification link, optional revoke
+/**
+ * CredentialCard — friendly display for a single issued credential.
+ * - Plain-language labels (no raw IPFS / blockchain jargon in the main view)
+ * - "Technical Details" collapsed section for power-users / verifiers
+ * - QR code for share/verify
+ * - Buttons: download PDF, copy link, optional revoke (admin only)
+ */
 function CredentialCard({ credential, studentAddress, isAdmin, onRevoke }) {
   const [copied, setCopied] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [showTech, setShowTech] = useState(false);
 
   const verifyUrl = `${window.location.origin}/verify/${studentAddress}/${credential.index}`;
   const ipfsUrl = credential.cid ? `${IPFS_GATEWAY}${credential.cid}` : null;
@@ -49,76 +54,70 @@ function CredentialCard({ credential, studentAddress, isAdmin, onRevoke }) {
   };
 
   return (
-    <div
-      style={{
-        border: "1px solid #ccc",
-        padding: "18px",
-        marginBottom: "16px",
-        borderRadius: "8px",
-        backgroundColor: credential.revoked ? "#ffe6e6" : "#e6ffe6",
-        display: "flex",
-        gap: "20px",
-        alignItems: "flex-start",
-        flexWrap: "wrap",
-      }}
-    >
-      <div style={{ flex: "1 1 320px", minWidth: 0 }}>
-        <h4 style={{ margin: "0 0 10px 0" }}>{credential.title}</h4>
-        <p style={{ margin: "4px 0" }}>
-          <strong>Issued On:</strong> {credential.issuedOn}
-        </p>
-        <p style={{ margin: "4px 0" }}>
-          <strong>Status:</strong>{" "}
-          <span
-            style={{
-              color: credential.revoked ? "#b00020" : "#0a7d24",
-              fontWeight: "bold",
-            }}
-          >
+    <div className={`credential-card${credential.revoked ? " is-revoked" : ""}`}>
+      {/* ── Left: metadata ──────────────────────────────────────── */}
+      <div className="cred-meta">
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+          <h4 style={{ margin: 0 }}>{credential.title}</h4>
+          <span className={credential.revoked ? "badge badge-revoked" : "badge badge-active"}>
             {credential.revoked ? "Revoked" : "Active"}
           </span>
-        </p>
-        <p style={{ margin: "4px 0" }}>
-          <strong>Issuer:</strong> {credential.issuer.slice(0, 6)}...
-          {credential.issuer.slice(-4)}
-        </p>
+        </div>
 
-        {credential.cid && (
-          <p style={{ margin: "4px 0", wordBreak: "break-all", fontSize: "12px" }}>
-            <strong>IPFS CID:</strong> {credential.cid}{" "}
-            <a
-              href={ipfsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ fontSize: "12px" }}
-            >
-              View Document →
+        <div className="meta-row">
+          <strong>Issued On:</strong>
+          <span>{credential.issuedOn}</span>
+        </div>
+
+        <div className="meta-row">
+          <strong>Issued By:</strong>
+          <AddressPill address={credential.issuer} />
+        </div>
+
+        {credential.cid && ipfsUrl && (
+          <div className="meta-row">
+            <strong>Document:</strong>
+            <a href={ipfsUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>
+              Open Original Document ↗
             </a>
-          </p>
+          </div>
         )}
 
-        <p style={{ margin: "4px 0", wordBreak: "break-all", fontSize: "12px" }}>
-          <strong>CID Hash:</strong> {credential.cidHash}
-        </p>
+        {/* Collapsible technical details */}
+        <button
+          className="tech-details-toggle"
+          onClick={() => setShowTech((v) => !v)}
+        >
+          {showTech ? "▲" : "▼"} {showTech ? "Hide" : "Show"} Technical Details
+        </button>
 
-        <div style={{ marginTop: "14px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          <button onClick={downloadPDF} disabled={generating}>
-            {generating ? "Generating..." : "Download PDF"}
+        {showTech && (
+          <div className="tech-details">
+            <div><strong>Document ID (IPFS CID):</strong><br />{credential.cid || "—"}</div>
+            <div style={{ marginTop: 6 }}>
+              <strong>Verification Fingerprint (CID Hash):</strong><br />{credential.cidHash}
+            </div>
+            <div style={{ marginTop: 6 }}>
+              <strong>Issuer Wallet:</strong><br />{credential.issuer}
+            </div>
+          </div>
+        )}
+
+        {/* Action buttons */}
+        <div className="cred-actions">
+          <button className="btn btn-secondary" onClick={downloadPDF} disabled={generating}>
+            {generating ? "⏳ Generating…" : "📄 Download PDF"}
           </button>
-          <button onClick={() => copyToClipboard(verifyUrl, "verify")}>
-            {copied === "verify" ? "Copied!" : "Copy Verification Link"}
+          <button
+            className="btn btn-ghost"
+            onClick={() => copyToClipboard(verifyUrl, "verify")}
+          >
+            {copied === "verify" ? "✓ Copied!" : "🔗 Copy Verification Link"}
           </button>
           {isAdmin && !credential.revoked && (
             <button
+              className="btn btn-danger"
               onClick={() => onRevoke(studentAddress, credential.index)}
-              style={{
-                backgroundColor: "#ff4d4d",
-                color: "white",
-                border: "none",
-                padding: "6px 12px",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
             >
               Revoke
             </button>
@@ -126,18 +125,12 @@ function CredentialCard({ credential, studentAddress, isAdmin, onRevoke }) {
         </div>
       </div>
 
-      <div style={{ flex: "0 0 auto", textAlign: "center" }}>
-        <div
-          style={{
-            background: "white",
-            padding: "8px",
-            borderRadius: "6px",
-            border: "1px solid #ddd",
-          }}
-        >
+      {/* ── Right: QR code ──────────────────────────────────────── */}
+      <div className="qr-col">
+        <div className="qr-frame">
           <QRCodeSVG value={verifyUrl} size={110} level="M" />
         </div>
-        <p style={{ fontSize: "11px", color: "#555", marginTop: "6px" }}>
+        <p style={{ fontSize: 11, color: "var(--clr-text-muted)", marginTop: 6, textAlign: "center" }}>
           Scan to verify
         </p>
       </div>
